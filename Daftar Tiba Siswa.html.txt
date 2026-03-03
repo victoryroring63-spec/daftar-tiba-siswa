@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Presensi Siswa - Daftar Tiba</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fa; padding-top: 50px; }
+        .container { max-width: 800px; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .header-title { border-bottom: 2px solid #007bff; padding-bottom: 10px; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header-title text-center">
+        <h2>Daftar Tiba Siswa</h2>
+        <p class="text-muted" id="current-date"></p>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <input type="text" id="nis" class="form-control" placeholder="NIS Siswa" required>
+        </div>
+        <div class="col-md-5">
+            <input type="text" id="nama" class="form-control" placeholder="Nama Lengkap" required>
+        </div>
+        <div class="col-md-3">
+            <button onclick="catatKehadiran()" class="btn btn-primary w-100">Catat Tiba</button>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead class="table-dark">
+                <tr>
+                    <th>Waktu</th>
+                    <th>NIS</th>
+                    <th>Nama</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody id="tabel-kehadiran">
+                </tbody>
+        </table>
+    </div>
+
+    <div class="mt-4">
+        <button onclick="hapusSemua()" class="btn btn-outline-danger btn-sm">Reset Daftar Hari Ini</button>
+        <button onclick="exportExcel()" class="btn btn-success btn-sm">Unduh Rekap (CSV)</button>
+    </div>
+</div>
+
+<script>
+    // Menampilkan Tanggal Real-time
+    document.getElementById('current-date').innerText = new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+    function catatKehadiran() {
+        const nis = document.getElementById('nis').value;
+        const nama = document.getElementById('nama').value;
+        const waktu = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+
+        if (nis === "" || nama === "") {
+            alert("Harap isi NIS dan Nama!");
+            return;
+        }
+
+        const dataBaru = { nis, nama, waktu };
+        let daftarHadir = JSON.parse(localStorage.getItem('absensi')) || [];
+        daftarHadir.unshift(dataBaru); // Data terbaru di atas
+
+        localStorage.setItem('absensi', JSON.stringify(daftarHadir));
+        tampilkanData();
+        
+        // Reset Input
+        document.getElementById('nis').value = "";
+        document.getElementById('nama').value = "";
+    }
+
+    function tampilkanData() {
+        const tabel = document.getElementById('tabel-kehadiran');
+        const daftarHadir = JSON.parse(localStorage.getItem('absensi')) || [];
+        tabel.innerHTML = "";
+
+        daftarHadir.forEach(item => {
+            tabel.innerHTML += `
+                <tr>
+                    <td>${item.waktu}</td>
+                    <td>${item.nis}</td>
+                    <td>${item.nama}</td>
+                    <td><span class="badge bg-success">Tiba</span></td>
+                </tr>
+            `;
+        });
+    }
+
+    function exportExcel() {
+        const daftarHadir = JSON.parse(localStorage.getItem('absensi')) || [];
+        let csvContent = "data:text/csv;charset=utf-8,Waktu,NIS,Nama\n";
+        daftarHadir.forEach(row => {
+            csvContent += `${row.waktu},${row.nis},${row.nama}\n`;
+        });
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", "rekap_kehadiran.csv");
+        document.body.appendChild(link);
+        link.click();
+    }
+
+    function hapusSemua() {
+        if(confirm("Hapus semua data hari ini?")) {
+            localStorage.removeItem('absensi');
+            tampilkanData();
+        }
+    }
+
+    // Jalankan fungsi tampilkan saat halaman dimuat
+    tampilkanData();
+</script>
+
+</body>
+</html>
